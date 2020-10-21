@@ -30,7 +30,7 @@ class CustomFlatButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialButton(
       height: height ?? 45,
-      minWidth: width ?? 300,
+      minWidth: width ?? 200,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(radius))),
       onPressed: callback,
       color: color ?? primaryColor,

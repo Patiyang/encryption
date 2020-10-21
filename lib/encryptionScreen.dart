@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:encryption/customButton.dart';
 import 'package:encryption/customText.dart';
+import 'package:encryption/encryptedImages.dart';
 import 'package:encryption/styling.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -16,6 +17,7 @@ class EncryptionScreen extends StatefulWidget {
 
 class _EncryptionScreenState extends State<EncryptionScreen> {
   String encFilepath;
+  String encMultiplePath;
   String decFilepath;
   // FilePickerResult result;
   FilePicker picker;
@@ -23,6 +25,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   File encryptedImage;
   String fileToEncrypt = '/data/user/0';
   String decryptionPassword = '123456';
+  List<File> encryptedImages = [];
   final scaffoldKey = GlobalKey<ScaffoldState>();
   @override
   Widget build(BuildContext context) {
@@ -37,18 +40,21 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
       ),
       body: Container(
         alignment: Alignment.center,
-        child: Column(
+        child: ListView(
           // mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
+          // crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            CustomFlatButton(
-              callback: () => pickFile(),
-              color: primaryColor,
-              textColor: white,
-              text: 'Choose File',
-              radius: 40,
-              width: 100,
-              // height: 50,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18.0),
+              child: CustomFlatButton(
+                callback: () => pickFile(),
+                color: primaryColor,
+                textColor: white,
+                text: 'Choose File',
+                radius: 40,
+                width: 100,
+                // height: 50,
+              ),
             ),
             SizedBox(height: 20),
             CustomRichText(
@@ -60,13 +66,16 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
               boldFont: fileToEncrypt == '/data/user/0' ? '' : fileToEncrypt,
             ),
             SizedBox(height: 20),
-            CustomFlatButton(
-              color: primaryColor,
-              textColor: white,
-              text: 'Encrypt the File',
-              radius: 40,
-              width: 100,
-              callback: () => encryptFile(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18.0),
+              child: CustomFlatButton(
+                color: primaryColor,
+                textColor: white,
+                text: 'Encrypt the File',
+                radius: 40,
+                width: 100,
+                callback: () => encryptFile(),
+              ),
             ),
             // SizedBox(height: 20),
             // CustomFlatButton(
@@ -78,26 +87,63 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
             //   callback: () => decryptFile(),
             // ),
             SizedBox(height: 20),
-            CustomFlatButton(
-              color: primaryColor,
-              textColor: white,
-              text: 'Pick Encrypted Image',
-              radius: 40,
-              width: 100,
-              callback: () => pickEncryptedFile(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18.0),
+              child: CustomFlatButton(
+                color: primaryColor,
+                textColor: white,
+                text: 'Pick Encrypted Image',
+                radius: 40,
+                width: 100,
+                callback: () => pickEncryptedFile(),
+              ),
             ),
             SizedBox(height: 20),
-            Expanded(
-              child: Container(
-                margin: EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.all(Radius.circular(20)),
-                  color: grey[300],
-                ),
-                // height: 200,
-                width: MediaQuery.of(context).size.width,
-                child: userImage(),
+            Container(
+              margin: EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(20)),
+                color: grey[300],
               ),
+              height: 200,
+              width: MediaQuery.of(context).size.width,
+              child: userImage(),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: CustomText(text: 'Load Image list', textAlign: TextAlign.center),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18.0),
+              child: CustomFlatButton(
+                color: primaryColor,
+                textColor: white,
+                text: 'Pick Encrypted Image List',
+                radius: 40,
+                width: 100,
+                callback: () => pickMultiple(),
+              ),
+            ),
+            Column(
+              children: encryptedImages.isNotEmpty
+                  ? encryptedImages
+                      .map((e) => Column(
+                            children: [
+                              CustomText(text: e.path, maxLines: 2, size: 13, color: grey[400], overflow: TextOverflow.visible),
+                              SizedBox(height: 10),
+                              ClipRRect(
+                                  borderRadius: BorderRadius.all(Radius.circular(9)),
+                                  child: Image.asset(decryptMultipleFile(e.path),
+                                      fit: BoxFit.cover, height: 200, width: MediaQuery.of(context).size.width))
+                            ],
+                          ))
+                      .toList()
+                  : [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: CustomText(text: 'YOUR ENCRYPTED LIST IS EMPTY'),
+                      )
+                    ],
             )
           ],
         ),
@@ -147,6 +193,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
       });
     });
     decryptFile(encryptedImage.path);
+    print('THE SINGLE IMAGE PATH IS ' + encryptedImage.path);
   }
 
   decryptFile(String path) {
@@ -162,8 +209,41 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
       print('Decrypted file 1: $decFilepath');
       print('File content: ' + File(decFilepath).readAsStringSync() + '\n');
     } catch (e) {
-      print('THE ERROR IS ' + e.toString());
+      print('THE ExRROR IS ' + e.toString());
     }
+  }
+
+  pickMultiple() async {
+    await FilePicker.getMultiFile().then((value) {
+      setState(() {
+        encryptedImages = value;
+      });
+    });
+    // decryptFile(encryptedImage.path);
+    try {
+      encryptedImages.forEach((element) {
+        decryptMultipleFile(element.path);
+      });
+      scaffoldKey.currentState.showSnackBar(SnackBar(
+          backgroundColor: white,
+          content: CustomText(text: 'Decryption successful', textAlign: TextAlign.center, color: Colors.green)));
+    } catch (e) {
+      print('the error' + e.toString());
+    }
+  }
+
+  decryptMultipleFile(String path) {
+    try {
+      decFilepath = crypt.decryptFileSync(path);
+      encryptedImages.forEach((element) {
+        setState(() {
+          encMultiplePath = decFilepath;
+        });
+      });
+    } catch (e) {
+      print('THE ExRROR IS ' + e.toString());
+    }
+    return encMultiplePath;
   }
 
   Widget userImage() {
@@ -173,4 +253,8 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
             borderRadius: BorderRadius.all(Radius.circular(9)),
             child: Image.asset(encFilepath, fit: BoxFit.cover, height: 100, width: 100));
   }
+
+  // fetchEncryptedImages(){
+  //   encryptedImages.add(value)
+  // }
 }
