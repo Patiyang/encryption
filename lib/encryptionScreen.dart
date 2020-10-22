@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:aes_crypt/aes_crypt.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class EncryptionScreen extends StatefulWidget {
   @override
@@ -29,6 +30,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   List<File> encryptedImages = [];
   final scaffoldKey = GlobalKey<ScaffoldState>();
   String dirPath = '';
+  Permission permission;
   @override
   void initState() {
     super.initState();
@@ -161,33 +163,42 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   }
 
   pickFile() async {
-    File file = await FilePicker.getFile();
-    if (file != null) {
-      print('the file to encrypt is ' + file.path);
-      setState(() {
-        fileToEncrypt = file.path;
-      });
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
     } else {
-      throw Exception('USER CANCELLED THE FILE PICKING');
+      File file = await FilePicker.getFile();
+      if (file != null) {
+        print('the file to encrypt is ' + file.path);
+        setState(() {
+          // fileToEncrypt = file.path.replaceAll('/data/user/0/com.example.encryption/cache', '/storage/emulated/0/Download');
+          fileToEncrypt = file.path;
+        });
+      } else {
+        throw Exception('USER CANCELLED THE FILE PICKING');
+      }
     }
   }
 
-  encryptFile() {
-    try {
-      encFilepath = crypt.encryptFileSync(fileToEncrypt);
-      print(encFilepath);
-
-      print('The encryption has been completed successfully.');
-      print('Encrypted file: $encFilepath');
-      scaffoldKey.currentState
-          .showSnackBar(SnackBar(content: CustomText(text: 'Encryption successful', textAlign: TextAlign.center, color: white)));
-    } catch (e) {
-      print('The encryption process has failed.' + e.message);
-      Fluttertoast.showToast(msg: e.message);
-      print(encFilepath);
-      scaffoldKey.currentState
-          .showSnackBar(SnackBar(content: CustomText(text: 'ENCRYPTION FAILED', textAlign: TextAlign.center, color: Colors.red)));
-      return;
+  encryptFile() async {
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    } else {
+      try {
+        encFilepath = crypt.encryptFileSync(fileToEncrypt);
+        print('The encryption has been completed successfully.');
+        print('Encrypted file: $encFilepath');
+        scaffoldKey.currentState.showSnackBar(
+            SnackBar(content: CustomText(text: 'Encryption successful', textAlign: TextAlign.center, color: white)));
+      } on AesCryptException catch (e) {
+        print('The encryption process has failed.' + e.message);
+        Fluttertoast.showToast(msg: e.message);
+        print(encFilepath);
+        scaffoldKey.currentState.showSnackBar(
+            SnackBar(content: CustomText(text: 'ENCRYPTION FAILED', textAlign: TextAlign.center, color: Colors.red)));
+        return;
+      }
     }
   }
 
@@ -235,7 +246,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
 
   decryptMultipleFile(String path) {
     try {
-      decFilepath = crypt.decryptFileSync(path,dirPath);
+      decFilepath = crypt.decryptFileSync(path, dirPath);
       encryptedImages.forEach((element) {
         setState(() {
           encMultiplePath = decFilepath;
@@ -255,24 +266,13 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
             child: Image.file(File(encFilepath), fit: BoxFit.cover, height: 100, width: 100));
   }
 
-  // fetchEncryptedImages() async {
-  //   Directory encryptDir = await getExternalStorageDirectory();
-  //   print('the encrypted path is\n\n\n\n\n' +
-  //       encryptDir.toString().replaceAll('Android/data/com.example.encryption/files', 'Downloads'));
-  //   await Directory(encryptinDir).create(recursive: true);
-  //   setState(() {
-  //     encryptinDir = '${encryptDir.toString().replaceAll('Android/data/com.example.encryption/files', 'Pictures')}';
-  //   });
-
-  //   return encryptinDir;
-  // }
-  Future<String> getExternalStoragePicturesDirectory() async {
+  getExternalStoragePicturesDirectory() async {
     final Directory extDir = await getExternalStorageDirectory();
-    dirPath = '${extDir.path}/Download/ENCRYPTION';
+    dirPath = '${extDir.path}/Download';
     setState(() {
       dirPath = dirPath.replaceAll("Android/data/com.example.encryption/files/", "");
     });
-    print(dirPath);
+    print('PATH IS' + dirPath);
     await Directory(dirPath).create(recursive: true);
     return dirPath;
   }
