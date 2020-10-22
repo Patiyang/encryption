@@ -29,6 +29,12 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   List<File> encryptedImages = [];
   final scaffoldKey = GlobalKey<ScaffoldState>();
   @override
+  void initState() {
+    super.initState();
+    fetchEncryptedImages();
+  }
+
+  @override
   Widget build(BuildContext context) {
     crypt.setPassword(decryptionPassword);
     crypt.setOverwriteMode(AesCryptOwMode.rename);
@@ -134,7 +140,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                               SizedBox(height: 10),
                               ClipRRect(
                                   borderRadius: BorderRadius.all(Radius.circular(9)),
-                                  child: Image.asset(decryptMultipleFile(e.path),
+                                  child: Image.file(File(decryptMultipleFile(e.path)),
                                       fit: BoxFit.cover, height: 200, width: MediaQuery.of(context).size.width))
                             ],
                           ))
@@ -172,7 +178,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
       scaffoldKey.currentState
           .showSnackBar(SnackBar(content: CustomText(text: 'Encryption successful', textAlign: TextAlign.center, color: white)));
     } catch (e) {
-      print('The encryption process has failed.');
+      print('The encryption process has failed.' + e.message);
       Fluttertoast.showToast(msg: e.message);
       scaffoldKey.currentState
           .showSnackBar(SnackBar(content: CustomText(text: 'ENCRYPTION FAILED', textAlign: TextAlign.center, color: Colors.red)));
@@ -187,11 +193,12 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
       });
     });
     decryptFile(encryptedImage.path);
+
     print('THE SINGLE IMAGE PATH IS ' + encryptedImage.path);
   }
 
   decryptFile(String path) {
-    // try {
+    setState(() {});
     decFilepath = crypt.decryptFileSync(path);
     scaffoldKey.currentState.showSnackBar(SnackBar(
         backgroundColor: white,
@@ -200,9 +207,6 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
       encFilepath = decFilepath;
     });
     print('Decrypted file 1: $decFilepath');
-    // } catch (e) {
-    //   print('THE ERROR IS ' + e.toString());
-    // }
   }
 
   pickMultiple() async {
@@ -243,10 +247,10 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
         ? Icon(Icons.image)
         : ClipRRect(
             borderRadius: BorderRadius.all(Radius.circular(9)),
-            child: Image.asset(encFilepath, fit: BoxFit.cover, height: 100, width: 100));
+            child: Image.file(File(encFilepath), fit: BoxFit.cover, height: 100, width: 100));
   }
 
-  // fetchEncryptedImages(){
-  //   encryptedImages.add(value)
-  // }
+  fetchEncryptedImages() {
+    setState(() {});
+  }
 }
