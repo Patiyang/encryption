@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:aes_crypt/aes_crypt.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class EncryptionScreen extends StatefulWidget {
   @override
@@ -30,7 +31,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   @override
   Widget build(BuildContext context) {
     crypt.setPassword(decryptionPassword);
-    crypt.setOverwriteMode(AesCryptOwMode.on);
+    crypt.setOverwriteMode(AesCryptOwMode.rename);
     return Scaffold(
       key: scaffoldKey,
       appBar: AppBar(
@@ -50,7 +51,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                 callback: () => pickFile(),
                 color: primaryColor,
                 textColor: white,
-                text: 'Choose File',
+                text: 'Choose File to encrypt',
                 radius: 40,
                 width: 100,
                 // height: 50,
@@ -118,14 +119,14 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
               child: CustomFlatButton(
                 color: primaryColor,
                 textColor: white,
-                text: 'Pick Encrypted Image List',
+                text: 'Pick A list of encrypted images',
                 radius: 40,
                 width: 100,
                 callback: () => pickMultiple(),
               ),
             ),
             Column(
-              children: encryptedImages.isNotEmpty
+              children: encryptedImages != null
                   ? encryptedImages
                       .map((e) => Column(
                             children: [
@@ -166,22 +167,15 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   encryptFile() {
     try {
       encFilepath = crypt.encryptFileSync(fileToEncrypt);
-      // encFilepath = crypt.encryptFileSync(fileToEncrypt);
       print('The encryption has been completed successfully.');
       print('Encrypted file: $encFilepath');
       scaffoldKey.currentState
           .showSnackBar(SnackBar(content: CustomText(text: 'Encryption successful', textAlign: TextAlign.center, color: white)));
-    } on AesCryptException catch (e) {
-      if (e.type == AesCryptExceptionType.destFileExists) {
-        print('The encryption process has failed.');
-        throw Exception(e.message);
-      }
-      scaffoldKey.currentState.showSnackBar(SnackBar(
-          content: CustomText(
-        text: 'ENCRYPTION FAILED',
-        textAlign: TextAlign.center,
-        color: Colors.red,
-      )));
+    } catch (e) {
+      print('The encryption process has failed.');
+      Fluttertoast.showToast(msg: e.message);
+      scaffoldKey.currentState
+          .showSnackBar(SnackBar(content: CustomText(text: 'ENCRYPTION FAILED', textAlign: TextAlign.center, color: Colors.red)));
       return;
     }
   }
@@ -197,20 +191,18 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   }
 
   decryptFile(String path) {
-    try {
-      decFilepath = crypt.decryptFileSync(path);
-
-      scaffoldKey.currentState.showSnackBar(SnackBar(
-          backgroundColor: white,
-          content: CustomText(text: 'Decryption successful', textAlign: TextAlign.center, color: Colors.green)));
-      setState(() {
-        encFilepath = decFilepath;
-      });
-      print('Decrypted file 1: $decFilepath');
-      print('File content: ' + File(decFilepath).readAsStringSync() + '\n');
-    } catch (e) {
-      print('THE ExRROR IS ' + e.toString());
-    }
+    // try {
+    decFilepath = crypt.decryptFileSync(path);
+    scaffoldKey.currentState.showSnackBar(SnackBar(
+        backgroundColor: white,
+        content: CustomText(text: 'Decryption successful', textAlign: TextAlign.center, color: Colors.green)));
+    setState(() {
+      encFilepath = decFilepath;
+    });
+    print('Decrypted file 1: $decFilepath');
+    // } catch (e) {
+    //   print('THE ERROR IS ' + e.toString());
+    // }
   }
 
   pickMultiple() async {
