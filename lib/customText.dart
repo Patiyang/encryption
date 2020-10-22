@@ -68,7 +68,7 @@ class CustomRichText extends StatelessWidget {
     return GestureDetector(
       onTap: lightCallback,
       child: RichText(textAlign: TextAlign.center,
-        maxLines: 2,
+        maxLines: 3,
         overflow: TextOverflow.ellipsis,
         text: TextSpan(children: [
           TextSpan(

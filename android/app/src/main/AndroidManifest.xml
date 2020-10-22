@@ -11,7 +11,7 @@
         android:name="io.flutter.app.FlutterApplication"
         android:label="encryption"
         android:icon="@mipmap/ic_launcher">
-        android:requestLegacyExternalStorage="false"
+        android:requestLegacyExternalStorage="true"
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"

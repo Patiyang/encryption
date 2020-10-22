@@ -28,6 +28,7 @@ dependencies:
   aes_crypt: ^0.1.1
   permission_handler: ^5.0.1+1
   fluttertoast: ^7.1.1
+  path_provider: ^1.6.21
 
 
   # The following adds the Cupertino Icons font to your application.
