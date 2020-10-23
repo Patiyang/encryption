@@ -31,10 +31,11 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   String dirPath = '';
   Permission permission;
+
   @override
   void initState() {
     super.initState();
-    // print(encryptinDir);
+    print('\n\n\n\n\n\n\n\n');
     getExternalStoragePicturesDirectory();
   }
 
@@ -88,15 +89,6 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                 callback: () => encryptFile(),
               ),
             ),
-            // SizedBox(height: 20),
-            // CustomFlatButton(
-            //   color: primaryColor,
-            //   textColor: white,
-            //   text: 'Decrypt the File',
-            //   radius: 40,
-            //   width: 100,
-            //   callback: () => decryptFile(),
-            // ),
             SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18.0),
@@ -106,7 +98,8 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                 text: 'Pick Encrypted Image',
                 radius: 40,
                 width: 100,
-                callback: () => pickEncryptedFile(),
+                callback: () => pickEncryptedFile()
+                    .then((value) => Future.delayed(Duration(seconds: 3)).then((value) => File(decFilepath).delete())),
               ),
             ),
             SizedBox(height: 20),
@@ -132,30 +125,35 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                 text: 'Pick A list of encrypted images',
                 radius: 40,
                 width: 100,
-                callback: () => pickMultiple(),
+                callback: () => pickMultiple().then((value) => Future.delayed(Duration(seconds: 3))).then((value) {
+                  for (int i = 0; i < encryptedImages.length; i++) {
+                    File(encryptedImages[i].path).delete();
+                  }
+                }),
               ),
             ),
             Column(
-              children: encryptedImages != null
-                  ? encryptedImages
-                      .map((e) => Column(
-                            children: [
-                              CustomText(text: e.path, maxLines: 2, size: 13, color: grey[400], overflow: TextOverflow.visible),
-                              SizedBox(height: 10),
-                              ClipRRect(
-                                  borderRadius: BorderRadius.all(Radius.circular(9)),
-                                  child: Image.file(File(decryptMultipleFile(e.path)),
-                                      fit: BoxFit.cover, height: 200, width: MediaQuery.of(context).size.width))
-                            ],
-                          ))
-                      .toList()
-                  : [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: CustomText(text: 'YOUR ENCRYPTED LIST IS EMPTY'),
-                      )
-                    ],
-            )
+                children: encryptedImages.length > 1
+                    ? encryptedImages
+                        .map((e) => Column(
+                              children: [
+                                CustomText(text: e.path, maxLines: 2, size: 13, color: grey[400], overflow: TextOverflow.visible),
+                                SizedBox(height: 10),
+                                ClipRRect(
+                                    borderRadius: BorderRadius.all(Radius.circular(9)),
+                                    child: Image.file(File(decryptMultipleFile(e.path)),
+                                        fit: BoxFit.cover, height: 200, width: MediaQuery.of(context).size.width))
+                              ],
+                            ))
+                        .toList()
+                    : [
+                        Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: CustomText(
+                              text: 'YOUR ENCRYPTED LIST IS EMPTY',
+                              color: black,
+                            ))
+                      ])
           ],
         ),
       ),
@@ -171,7 +169,6 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
       if (file != null) {
         print('the file to encrypt is ' + file.path);
         setState(() {
-          // fileToEncrypt = file.path.replaceAll('/data/user/0/com.example.encryption/cache', '/storage/emulated/0/Download');
           fileToEncrypt = file.path;
         });
       } else {
@@ -202,14 +199,12 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
     }
   }
 
-  pickEncryptedFile() async {
+  Future pickEncryptedFile() async {
     await FilePicker.getFile().then((value) {
       setState(() {
         encryptedImage = value;
       });
-    });
-    decryptFile(encryptedImage.path);
-
+    }).then((value) => decryptFile(encryptedImage.path));
     print('THE SINGLE IMAGE PATH IS ' + encryptedImage.path);
   }
 
@@ -234,7 +229,9 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
     // decryptFile(encryptedImage.path);
     try {
       encryptedImages.forEach((element) {
-        decryptMultipleFile(element.path);
+        setState(() {
+          decryptMultipleFile(element.path);
+        });
       });
       scaffoldKey.currentState.showSnackBar(SnackBar(
           backgroundColor: white,
