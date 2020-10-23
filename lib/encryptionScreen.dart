@@ -35,14 +35,12 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   @override
   void initState() {
     super.initState();
-    print('\n\n\n\n\n\n\n\n');
-    getExternalStoragePicturesDirectory();
   }
 
   @override
   Widget build(BuildContext context) {
     crypt.setPassword(decryptionPassword);
-    crypt.setOverwriteMode(AesCryptOwMode.rename);
+    crypt.setOverwriteMode(AesCryptOwMode.on);
     return Scaffold(
       key: scaffoldKey,
       appBar: AppBar(
@@ -99,7 +97,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                 radius: 40,
                 width: 100,
                 callback: () => pickEncryptedFile()
-                    .then((value) => Future.delayed(Duration(seconds: 3)).then((value) => File(decFilepath).delete())),
+                    .then((value) => Future.delayed(Duration(seconds: 1)).then((value) => File(decFilepath).delete())),
               ),
             ),
             SizedBox(height: 20),
@@ -125,9 +123,11 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                 text: 'Pick A list of encrypted images',
                 radius: 40,
                 width: 100,
-                callback: () => pickMultiple().then((value) => Future.delayed(Duration(seconds: 3))).then((value) {
+                callback: () => pickMultiple().then((value) => Future.delayed(Duration(seconds: 1))).then((value) {
                   for (int i = 0; i < encryptedImages.length; i++) {
-                    File(encryptedImages[i].path).delete();
+                    encryptedImages.forEach((element) {
+                      File(decryptMultipleFile(element.path)).delete();
+                    });
                   }
                 }),
               ),
@@ -209,7 +209,6 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   }
 
   decryptFile(String path) {
-    setState(() {});
     decFilepath = crypt.decryptFileSync(path);
     scaffoldKey.currentState.showSnackBar(SnackBar(
         backgroundColor: white,
@@ -220,24 +219,28 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
     print('Decrypted file 1: $decFilepath');
   }
 
-  pickMultiple() async {
-    await FilePicker.getMultiFile().then((value) {
-      setState(() {
+  Future pickMultiple() async {
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    } else {
+      await FilePicker.getMultiFile().then((value) {
+        // setState(() {
         encryptedImages = value;
+        // });
       });
-    });
-    // decryptFile(encryptedImage.path);
-    try {
-      encryptedImages.forEach((element) {
-        setState(() {
-          decryptMultipleFile(element.path);
+      try {
+        encryptedImages.forEach((element) {
+          setState(() {
+            decryptMultipleFile(element.path);
+          });
         });
-      });
-      scaffoldKey.currentState.showSnackBar(SnackBar(
-          backgroundColor: white,
-          content: CustomText(text: 'Decryption successful', textAlign: TextAlign.center, color: Colors.green)));
-    } catch (e) {
-      print('the error' + e.toString());
+        scaffoldKey.currentState.showSnackBar(SnackBar(
+            backgroundColor: white,
+            content: CustomText(text: 'Decryption successful', textAlign: TextAlign.center, color: Colors.green)));
+      } catch (e) {
+        print('the error' + e.toString());
+      }
     }
   }
 
@@ -245,12 +248,12 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
     try {
       decFilepath = crypt.decryptFileSync(path, dirPath);
       encryptedImages.forEach((element) {
-        setState(() {
-          encMultiplePath = decFilepath;
-        });
+        // setState(() {
+        encMultiplePath = decFilepath;
+        // });
       });
     } catch (e) {
-      print('THE ExRROR IS ' + e.toString());
+      print('THE ERROR IS ' + e.toString());
     }
     return encMultiplePath;
   }
