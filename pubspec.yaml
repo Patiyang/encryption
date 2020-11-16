@@ -29,7 +29,7 @@ dependencies:
   permission_handler: ^5.0.1+1
   fluttertoast: ^7.1.1
   path_provider: ^1.6.21
-  # simple_permissions: ^0.1.9
+  path_provider_ex: ^1.0.1
 
 
   # The following adds the Cupertino Icons font to your application.

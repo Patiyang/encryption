@@ -8,8 +8,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:aes_crypt/aes_crypt.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path_provider_ex/path_provider_ex.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class EncryptionScreen extends StatefulWidget {
@@ -31,10 +33,12 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   String dirPath = '';
   Permission permission;
+  List<StorageInfo> _storageInfo = [];
 
   @override
   void initState() {
     super.initState();
+    initPlatformState();
   }
 
   @override
@@ -73,7 +77,10 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
               boldFontSize: 15,
               lightFontSize: 13,
               lightFont: 'The file to encrypt is: ',
-              boldFont: fileToEncrypt == '/data/user/0' ? '' : fileToEncrypt,
+              boldFont: fileToEncrypt == '/data/user/0'
+                  ? ''
+                  : fileToEncrypt.replaceAll(
+                      '/data/user/0/com.example.encryption/cache/', '${_storageInfo[1].rootDir}/Encryption/'),
             ),
             SizedBox(height: 20),
             Padding(
@@ -84,7 +91,10 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                 text: 'Encrypt the File',
                 radius: 40,
                 width: 100,
-                callback: () => encryptFile(),
+                callback: () => encryptFile().then((value) => Future.delayed(Duration(seconds: 1))).then((value) => File(
+                        fileToEncrypt.replaceAll(
+                            '/data/user/0/com.example.encryption/cache/', '${_storageInfo[1].rootDir}/Encryption/'))
+                    .delete()),
               ),
             ),
             SizedBox(height: 20),
@@ -96,8 +106,15 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                 text: 'Pick Encrypted Image',
                 radius: 40,
                 width: 100,
-                callback: () => pickEncryptedFile()
-                    .then((value) => Future.delayed(Duration(seconds: 1)).then((value) => File(decFilepath).delete())),
+                callback: () => pickEncryptedFile().then((value) => Future.delayed(Duration(seconds: 1)).then((value) {
+                      // try {
+                      //   File(decFilepath.replaceAll(
+                      //           '/data/user/0/com.example.encryption/cache/', '${_storageInfo[1].rootDir}/Encryption/'))
+                      //       .delete();
+                      // } catch (e) {
+                      //   print(e.toString());
+                      // }
+                    })),
               ),
             ),
             SizedBox(height: 20),
@@ -167,7 +184,8 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
     } else {
       File file = await FilePicker.getFile();
       if (file != null) {
-        print('the file to encrypt is ' + file.path);
+        print('the file to encrypt is ' +
+            file.path.replaceAll('/data/user/0/com.example.encryption/cache/', '${_storageInfo[1].rootDir}/Encryption/'));
         setState(() {
           fileToEncrypt = file.path;
         });
@@ -177,13 +195,14 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
     }
   }
 
-  encryptFile() async {
+  Future encryptFile() async {
     var status = await Permission.storage.status;
     if (!status.isGranted) {
       await Permission.storage.request();
     } else {
       try {
-        encFilepath = crypt.encryptFileSync(fileToEncrypt);
+        encFilepath = crypt.encryptFileSync(
+            fileToEncrypt.replaceAll('/data/user/0/com.example.encryption/cache/', '${_storageInfo[1].rootDir}/Encryption/'));
         print('The encryption has been completed successfully.');
         print('Encrypted file: $encFilepath');
         scaffoldKey.currentState.showSnackBar(
@@ -200,12 +219,16 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   }
 
   Future pickEncryptedFile() async {
-    await FilePicker.getFile().then((value) {
-      setState(() {
-        encryptedImage = value;
-      });
-    }).then((value) => decryptFile(encryptedImage.path));
-    print('THE SINGLE IMAGE PATH IS ' + encryptedImage.path);
+    try {
+      await FilePicker.getFile().then((value) {
+        setState(() {
+          encryptedImage = value;
+        });
+      }).then((value) => decryptFile(encryptedImage.path));
+      print('THE SINGLE IMAGE PATH IS ' + encryptedImage.path);
+    } catch (e) {
+      print('No image has been selected');
+    }
   }
 
   decryptFile(String path) {
@@ -259,21 +282,28 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   }
 
   Widget userImage() {
-    return encFilepath == null
+    return encFilepath == null || encryptedImage == null
         ? Icon(Icons.image)
         : ClipRRect(
             borderRadius: BorderRadius.all(Radius.circular(9)),
             child: Image.file(File(encFilepath), fit: BoxFit.cover, height: 100, width: 100));
   }
 
-  getExternalStoragePicturesDirectory() async {
-    final Directory extDir = await getExternalStorageDirectory();
-    dirPath = '${extDir.path}/Download';
+  Future<void> initPlatformState() async {
+    List<StorageInfo> storageInfo;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      storageInfo = await PathProviderEx.getStorageInfo();
+    } on PlatformException {}
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) return;
+
     setState(() {
-      dirPath = dirPath.replaceAll("Android/data/com.example.encryption/files/", "");
+      _storageInfo = storageInfo;
     });
-    print('PATH IS' + dirPath);
-    await Directory(dirPath).create(recursive: true);
-    return dirPath;
+    print('THE PATH TO EXTERNAL STORAGE IS ' + _storageInfo[1].rootDir);
   }
 }
