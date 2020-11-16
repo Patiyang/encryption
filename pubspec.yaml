@@ -30,6 +30,7 @@ dependencies:
   fluttertoast: ^7.1.1
   path_provider: ^1.6.21
   path_provider_ex: ^1.0.1
+  flutter_spinkit: "^4.1.2"
 
 
   # The following adds the Cupertino Icons font to your application.

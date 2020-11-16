@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:encryption/customButton.dart';
 import 'package:encryption/customText.dart';
+import 'package:encryption/loading.dart';
 import 'package:encryption/styling.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
@@ -34,6 +35,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   String dirPath = '';
   Permission permission;
   List<StorageInfo> _storageInfo = [];
+  bool loading = false;
 
   @override
   void initState() {
@@ -52,125 +54,135 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
         centerTitle: true,
         title: CustomText(text: 'File Encryption', size: 20, color: white),
       ),
-      body: Container(
-        alignment: Alignment.center,
-        child: ListView(
-          // mainAxisAlignment: MainAxisAlignment.center,
-          // crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18.0),
-              child: CustomFlatButton(
-                callback: () => pickFile(),
-                color: primaryColor,
-                textColor: white,
-                text: 'Choose File to encrypt',
-                radius: 40,
-                width: 100,
-                // height: 50,
-              ),
-            ),
-            SizedBox(height: 20),
-            CustomRichText(
-              lightColor: grey[700],
-              boldColor: black.withOpacity(.9),
-              boldFontSize: 15,
-              lightFontSize: 13,
-              lightFont: 'The file to encrypt is: ',
-              boldFont: fileToEncrypt == '/data/user/0'
-                  ? ''
-                  : fileToEncrypt.replaceAll(
-                      '/data/user/0/com.example.encryption/cache/', '${_storageInfo[_storageInfo.length-1].rootDir}/Encryption/'),
-            ),
-            SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18.0),
-              child: CustomFlatButton(
-                color: primaryColor,
-                textColor: white,
-                text: 'Encrypt the File',
-                radius: 40,
-                width: 100,
-                callback: () => encryptFile().then((value) => Future.delayed(Duration(seconds: 1))).then((value) => File(
-                        fileToEncrypt.replaceAll(
-                            '/data/user/0/com.example.encryption/cache/', '${_storageInfo[_storageInfo.length-1].rootDir}/Encryption/'))
-                    .delete()),
-              ),
-            ),
-            SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18.0),
-              child: CustomFlatButton(
-                color: primaryColor,
-                textColor: white,
-                text: 'Pick Encrypted Image',
-                radius: 40,
-                width: 100,
-                callback: () => pickEncryptedFile().then((value) => Future.delayed(Duration(seconds: 1)).then((value) {
-                      try {
-                        File(decFilepath).delete();
-                      } catch (e) {
-                        print(e.toString());
+      body: Stack(
+        children: [
+          Container(
+            alignment: Alignment.center,
+            child: ListView(
+              // mainAxisAlignment: MainAxisAlignment.center,
+              // crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                  child: CustomFlatButton(
+                    callback: () => pickFile(),
+                    color: primaryColor,
+                    textColor: white,
+                    text: 'Choose File to encrypt',
+                    radius: 40,
+                    width: 100,
+                    // height: 50,
+                  ),
+                ),
+                SizedBox(height: 20),
+                CustomRichText(
+                  lightColor: grey[700],
+                  boldColor: black.withOpacity(.9),
+                  boldFontSize: 15,
+                  lightFontSize: 13,
+                  lightFont: 'The file to encrypt is: ',
+                  boldFont: fileToEncrypt == '/data/user/0'
+                      ? ''
+                      : fileToEncrypt.replaceAll('/data/user/0/com.example.encryption/cache/',
+                          '${_storageInfo[_storageInfo.length - 1].rootDir}/Encryption/'),
+                ),
+                SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                  child: CustomFlatButton(
+                    color: primaryColor,
+                    textColor: white,
+                    text: 'Encrypt the File',
+                    radius: 40,
+                    width: 100,
+                    callback: () => encryptFile().then((value) => Future.delayed(Duration(seconds: 1))).then((value) => File(
+                            fileToEncrypt.replaceAll('/data/user/0/com.example.encryption/cache/',
+                                '${_storageInfo[_storageInfo.length - 1].rootDir}/Encryption/'))
+                        .delete()),
+                  ),
+                ),
+                SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                  child: CustomFlatButton(
+                    color: primaryColor,
+                    textColor: white,
+                    text: 'Pick Encrypted Image',
+                    radius: 40,
+                    width: 100,
+                    callback: () => pickEncryptedFile().then((value) => Future.delayed(Duration(seconds: 1)).then((value) {
+                          try {
+                            File(decFilepath).delete();
+                          } catch (e) {
+                            print(e.toString());
+                          }
+                        })),
+                  ),
+                ),
+                SizedBox(height: 20),
+                Container(
+                  margin: EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(20)),
+                    color: grey[300],
+                  ),
+                  height: 200,
+                  width: MediaQuery.of(context).size.width,
+                  child: userImage(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: CustomText(text: 'Load Image list', textAlign: TextAlign.center),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                  child: CustomFlatButton(
+                    color: primaryColor,
+                    textColor: white,
+                    text: 'Pick A list of encrypted images',
+                    radius: 40,
+                    width: 100,
+                    callback: () => pickMultiple().then((value) => Future.delayed(Duration(seconds: 1))).then((value) {
+                      for (int i = 0; i < encryptedImages.length; i++) {
+                        encryptedImages.forEach((element) {
+                          File(decryptMultipleFile(element.path)).delete();
+                        });
                       }
-                    })),
-              ),
+                    }),
+                  ),
+                ),
+                Column(
+                    children: encryptedImages.length > 1
+                        ? encryptedImages
+                            .map((e) => Column(
+                                  children: [
+                                    CustomText(
+                                        text: e.path, maxLines: 2, size: 13, color: grey[400], overflow: TextOverflow.visible),
+                                    SizedBox(height: 10),
+                                    ClipRRect(
+                                        borderRadius: BorderRadius.all(Radius.circular(9)),
+                                        child: Image.file(File(decryptMultipleFile(e.path)),
+                                            fit: BoxFit.cover, height: 200, width: MediaQuery.of(context).size.width))
+                                  ],
+                                ))
+                            .toList()
+                        : [
+                            Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: CustomText(
+                                  text: 'YOUR ENCRYPTED LIST IS EMPTY',
+                                  color: black,
+                                ))
+                          ])
+              ],
             ),
-            SizedBox(height: 20),
-            Container(
-              margin: EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(20)),
-                color: grey[300],
-              ),
-              height: 200,
-              width: MediaQuery.of(context).size.width,
-              child: userImage(),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: CustomText(text: 'Load Image list', textAlign: TextAlign.center),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18.0),
-              child: CustomFlatButton(
-                color: primaryColor,
-                textColor: white,
-                text: 'Pick A list of encrypted images',
-                radius: 40,
-                width: 100,
-                callback: () => pickMultiple().then((value) => Future.delayed(Duration(seconds: 1))).then((value) {
-                  for (int i = 0; i < encryptedImages.length; i++) {
-                    encryptedImages.forEach((element) {
-                      File(decryptMultipleFile(element.path)).delete();
-                    });
-                  }
-                }),
-              ),
-            ),
-            Column(
-                children: encryptedImages.length > 1
-                    ? encryptedImages
-                        .map((e) => Column(
-                              children: [
-                                CustomText(text: e.path, maxLines: 2, size: 13, color: grey[400], overflow: TextOverflow.visible),
-                                SizedBox(height: 10),
-                                ClipRRect(
-                                    borderRadius: BorderRadius.all(Radius.circular(9)),
-                                    child: Image.file(File(decryptMultipleFile(e.path)),
-                                        fit: BoxFit.cover, height: 200, width: MediaQuery.of(context).size.width))
-                              ],
-                            ))
-                        .toList()
-                    : [
-                        Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: CustomText(
-                              text: 'YOUR ENCRYPTED LIST IS EMPTY',
-                              color: black,
-                            ))
-                      ])
-          ],
-        ),
+          ),
+          Visibility(
+              visible: loading = true,
+              child: Loading(
+                text: 'Encrypting\nPlease wait...',
+              ))
+        ],
       ),
     );
   }
@@ -183,7 +195,8 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
       File file = await FilePicker.getFile();
       if (file != null) {
         print('the file to encrypt is ' +
-            file.path.replaceAll('/data/user/0/com.example.encryption/cache/', '${_storageInfo[_storageInfo.length-1].rootDir}/Encryption/'));
+            file.path.replaceAll(
+                '/data/user/0/com.example.encryption/cache/', '${_storageInfo[_storageInfo.length - 1].rootDir}/Encryption/'));
         setState(() {
           fileToEncrypt = file.path;
         });
@@ -194,13 +207,16 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   }
 
   Future encryptFile() async {
+    setState(() {
+      loading = true;
+    });
     var status = await Permission.storage.status;
     if (!status.isGranted) {
       await Permission.storage.request();
     } else {
       try {
-        encFilepath = crypt.encryptFileSync(
-            fileToEncrypt.replaceAll('/data/user/0/com.example.encryption/cache/', '${_storageInfo[_storageInfo.length-1].rootDir}/Encryption/'));
+        encFilepath = crypt.encryptFileSync(fileToEncrypt.replaceAll(
+            '/data/user/0/com.example.encryption/cache/', '${_storageInfo[_storageInfo.length - 1].rootDir}/Encryption/'));
         print('The encryption has been completed successfully.');
         print('Encrypted file: $encFilepath');
         scaffoldKey.currentState.showSnackBar(
@@ -214,6 +230,9 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
         return;
       }
     }
+    setState(() {
+      loading = false;
+    });
   }
 
   Future pickEncryptedFile() async {
@@ -230,12 +249,18 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   }
 
   decryptFile(String path) {
+    setState(() {
+      loading = true;
+    });
     decFilepath = crypt.decryptFileSync(path);
     scaffoldKey.currentState.showSnackBar(SnackBar(
         backgroundColor: white,
         content: CustomText(text: 'Decryption successful', textAlign: TextAlign.center, color: Colors.green)));
     setState(() {
       encFilepath = decFilepath;
+    });
+    setState(() {
+      loading = false;
     });
     print('Decrypted file 1: $decFilepath');
   }
@@ -302,6 +327,6 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
     setState(() {
       _storageInfo = storageInfo;
     });
-    print('THE PATH TO EXTERNAL STORAGE IS ' + _storageInfo[_storageInfo.length-1].rootDir);
+    print('THE PATH TO EXTERNAL STORAGE IS ' + _storageInfo[_storageInfo.length - 1].rootDir);
   }
 }
