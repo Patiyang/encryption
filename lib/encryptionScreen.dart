@@ -29,7 +29,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
   var crypt = AesCrypt();
   File encryptedImage;
   String fileToEncrypt = '/data/user/0';
-  String decryptionPassword = '123456';
+  String decryptionPassword = '123457';
   List<File> encryptedImages = [];
   final scaffoldKey = GlobalKey<ScaffoldState>();
   String dirPath = '';
@@ -178,7 +178,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
             ),
           ),
           Visibility(
-              visible: loading = true,
+              visible: loading == true,
               child: Loading(
                 text: 'Encrypting\nPlease wait...',
               ))
@@ -217,7 +217,6 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
       try {
         encFilepath = crypt.encryptFileSync(fileToEncrypt.replaceAll(
             '/data/user/0/com.example.encryption/cache/', '${_storageInfo[_storageInfo.length - 1].rootDir}/Encryption/'));
-        print('The encryption has been completed successfully.');
         print('Encrypted file: $encFilepath');
         scaffoldKey.currentState.showSnackBar(
             SnackBar(content: CustomText(text: 'Encryption successful', textAlign: TextAlign.center, color: white)));
@@ -229,8 +228,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
             SnackBar(content: CustomText(text: 'ENCRYPTION FAILED', textAlign: TextAlign.center, color: Colors.red)));
         return;
       }
-    }
-    setState(() {
+    } setState(() {
       loading = false;
     });
   }

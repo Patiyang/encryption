@@ -25,7 +25,7 @@ class _LoadingState extends State<Loading> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: lightTheme == true ? grey[100] : grey[900],
+      color: lightTheme == true ? grey[100].withOpacity(.3) : grey[900],
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
