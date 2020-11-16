@@ -80,7 +80,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
               boldFont: fileToEncrypt == '/data/user/0'
                   ? ''
                   : fileToEncrypt.replaceAll(
-                      '/data/user/0/com.example.encryption/cache/', '${_storageInfo[1].rootDir}/Encryption/'),
+                      '/data/user/0/com.example.encryption/cache/', '${_storageInfo[_storageInfo.length-1].rootDir}/Encryption/'),
             ),
             SizedBox(height: 20),
             Padding(
@@ -93,7 +93,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                 width: 100,
                 callback: () => encryptFile().then((value) => Future.delayed(Duration(seconds: 1))).then((value) => File(
                         fileToEncrypt.replaceAll(
-                            '/data/user/0/com.example.encryption/cache/', '${_storageInfo[1].rootDir}/Encryption/'))
+                            '/data/user/0/com.example.encryption/cache/', '${_storageInfo[_storageInfo.length-1].rootDir}/Encryption/'))
                     .delete()),
               ),
             ),
@@ -107,13 +107,11 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
                 radius: 40,
                 width: 100,
                 callback: () => pickEncryptedFile().then((value) => Future.delayed(Duration(seconds: 1)).then((value) {
-                      // try {
-                      //   File(decFilepath.replaceAll(
-                      //           '/data/user/0/com.example.encryption/cache/', '${_storageInfo[1].rootDir}/Encryption/'))
-                      //       .delete();
-                      // } catch (e) {
-                      //   print(e.toString());
-                      // }
+                      try {
+                        File(decFilepath).delete();
+                      } catch (e) {
+                        print(e.toString());
+                      }
                     })),
               ),
             ),
@@ -185,7 +183,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
       File file = await FilePicker.getFile();
       if (file != null) {
         print('the file to encrypt is ' +
-            file.path.replaceAll('/data/user/0/com.example.encryption/cache/', '${_storageInfo[1].rootDir}/Encryption/'));
+            file.path.replaceAll('/data/user/0/com.example.encryption/cache/', '${_storageInfo[_storageInfo.length-1].rootDir}/Encryption/'));
         setState(() {
           fileToEncrypt = file.path;
         });
@@ -202,7 +200,7 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
     } else {
       try {
         encFilepath = crypt.encryptFileSync(
-            fileToEncrypt.replaceAll('/data/user/0/com.example.encryption/cache/', '${_storageInfo[1].rootDir}/Encryption/'));
+            fileToEncrypt.replaceAll('/data/user/0/com.example.encryption/cache/', '${_storageInfo[_storageInfo.length-1].rootDir}/Encryption/'));
         print('The encryption has been completed successfully.');
         print('Encrypted file: $encFilepath');
         scaffoldKey.currentState.showSnackBar(
@@ -304,6 +302,6 @@ class _EncryptionScreenState extends State<EncryptionScreen> {
     setState(() {
       _storageInfo = storageInfo;
     });
-    print('THE PATH TO EXTERNAL STORAGE IS ' + _storageInfo[1].rootDir);
+    print('THE PATH TO EXTERNAL STORAGE IS ' + _storageInfo[_storageInfo.length-1].rootDir);
   }
 }
